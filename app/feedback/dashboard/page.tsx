@@ -1,46 +1,54 @@
 "use client";
 
-import React, { useState } from "react";
-import styles from "../shared/page.module.css";
-import Chat from "../../components/chat";
-import WeatherWidget from "../../components/weather-widget";
-import { getWeather } from "../../utils/weather";
-import { RequiredActionFunctionToolCall } from "openai/resources/beta/threads/runs/runs";
-
-interface WeatherData {
-  location?: string;
-  temperature?: number;
-  conditions?: string;
-}
+import React, { useState, useEffect, useRef } from "react";
+import styles from "./page.module.css";
 
 const FunctionCalling = () => {
-  const [weatherData, setWeatherData] = useState<WeatherData>({});
-  const isEmpty = Object.keys(weatherData).length === 0;
-
-  const functionCallHandler = async (call: RequiredActionFunctionToolCall) => {
-    if (call?.function?.name !== "get_weather") return;
-    const args = JSON.parse(call.function.arguments);
-    const data = getWeather(args.location);
-    setWeatherData(data);
-    return JSON.stringify(data);
-  };
+  const [feedbackList, setFeedbackList] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  useEffect(() => {
+    const getFeedbacks = async () => {
+      const res = await fetch(`/api/assistants/feedback`, {
+        method: "GET",
+      });
+      const data = await res.json();
+      setFeedbackList(data);
+      setIsLoading(false);
+    };
+    getFeedbacks();
+  }, []);
 
   return (
     <main className={styles.main}>
+      <div className={styles.title}>Feedback Highlights</div>
       <div className={styles.container}>
-        <div className={styles.column}>
-          <WeatherWidget
-            location={weatherData.location || "---"}
-            temperature={weatherData.temperature?.toString() || "---"}
-            conditions={weatherData.conditions || "Sunny"}
-            isEmpty={isEmpty}
-          />
-        </div>
-        <div className={styles.chatContainer}>
-          <div className={styles.chat}>
-            <Chat functionCallHandler={functionCallHandler} />
-          </div>
-        </div>
+        {isLoading ? (
+          <div className="loading">Loading feedbacks...</div>
+        ) : (
+          feedbackList.map((feedback, index) => (
+            <div
+              key={index}
+              className={`${styles.feedback} ${
+                feedback["Follow-up Required"] === "Yes"
+                  ? `${styles.highPriority}`
+                  : `${styles.normalPriority}`
+              }`}
+            >
+              <h3>{feedback["Feedback Theme"]}</h3>
+              <p>
+                <strong>Sentiment Summary:</strong>{" "}
+                {feedback["Sentiment Summary"]}
+              </p>
+              <p>
+                <strong>Detailed Feedback:</strong>{" "}
+                {feedback["Detailed Feedback"]}
+              </p>
+              <p>
+                <strong>Submission Date:</strong> {feedback["Submission Date"]}
+              </p>
+            </div>
+          ))
+        )}
       </div>
     </main>
   );

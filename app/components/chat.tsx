@@ -97,9 +97,14 @@ const Chat = ({
   }, [messages]);
 
   useEffect(() => {
-    scrollToBottom();
-    if(runCompleted && messages[messages.length-1].role === "assistant" && messages[messages.length-1].text?.includes('FINAL SUBMISSION')){
-      console.log(extractJsonFromFeedback(messages[messages.length-1].text))
+    const createFeedback = async (body: string) => {
+      const res = await fetch(`/api/assistants/feedback`, {
+        method: "POST",
+        body
+      });
+    };
+    if(runCompleted && messages[messages.length-1]?.role === "assistant" && messages[messages.length-1]?.text?.includes('FINAL SUBMISSION')){
+      createFeedback(JSON.stringify(extractJsonFromFeedback(messages[messages.length-1].text)))
     }
   }, [runCompleted]);
 
@@ -301,7 +306,7 @@ const Chat = ({
         <button
           type="submit"
           className={styles.button}
-          disabled={inputDisabled}
+          disabled={inputDisabled || !threadId}
         >
           Send
         </button>
