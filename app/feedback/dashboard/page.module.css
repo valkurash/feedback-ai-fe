@@ -1,0 +1,46 @@
+.main {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: white;
+}
+.title {
+  font-size: 1.5em;
+  margin-bottom: 20px;
+  font-weight: 600;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 1200px;
+  width: 100%;
+  padding: 20px;
+  box-sizing: border-box;
+  height: calc(100% - 100px);
+  overflow: auto;
+}
+
+.feedback {
+  color: black;
+  font-size: 1em;
+  border-radius: 32px;
+  background-color: #efefef;
+  padding: 20px;
+  line-height: 1.5em;
+}
+
+/* Background for normal priority (Follow-up Required: No) */
+.normalPriority {
+  background-color: #e6f7ff;
+  border: 1px solid #91d5ff;
+}
+
+/* Background for high priority (Follow-up Required: Yes) */
+.highPriority {
+  background-color: #fff2e8;
+  border: 1px solid #ffa39e;
+}
