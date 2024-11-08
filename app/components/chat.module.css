@@ -50,6 +50,7 @@
   flex-direction: column;
   order: 2;
   white-space: pre-wrap;
+  padding-top: 50px;
 }
 
 .userMessage,

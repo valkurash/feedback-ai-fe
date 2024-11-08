@@ -14,7 +14,7 @@
 
 .container {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   gap: 20px;
   max-width: 1200px;
   width: 100%;
@@ -35,8 +35,8 @@
   background-color: #efefef;
   cursor: pointer;
   max-width: 600px;
-  width: 120px;
-  height: 120px;
+  width: 320px;
+  height: 80px;
   padding: 20px;
   transition: background-color 0.3s ease;
   font-weight: 500;
@@ -44,4 +44,19 @@
 
 .category:hover {
   background-color: #e3e3eb;
+}
+
+.category.basic-feedback {
+  background-color: #a8d0e6
+}
+
+.category.basic-feedback:hover {
+  background-color: #8bbdd9
+}
+
+.category.suggestion {
+  background-color: #bde0c0
+}
+.category.suggestion:hover {
+  background-color: #a3d4a5
 }
