@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  Dispatch,
+  SetStateAction,
+} from "react";
 import styles from "./chat.module.css";
 import { AssistantStream } from "openai/lib/AssistantStream";
 import Markdown from "react-markdown";
@@ -30,7 +36,7 @@ const extractJsonFromFeedback = (text: string): Record<string, any> | null => {
     console.error("JSON not found in the text.");
     return null;
   }
-}
+};
 
 const UserMessage = ({ text }: { text: string }) => {
   return <div className={styles.userMessage}>{text}</div>;
@@ -75,17 +81,38 @@ type ChatProps = {
     toolCall: RequiredActionFunctionToolCall
   ) => Promise<string>;
   firstPrompt?: string;
+  setEvaluation: Dispatch<SetStateAction<Evaluation>>;
+};
+
+type ThreadPull = {
+  threadId: string;
+  threadId2: string;
+  threadId3: string;
+};
+
+type Evaluation = {
+  pending: boolean;
+  Priority: "Low" | "Medium" | "High";
+  KeyConcern: string;
+  RecommendedAction: string;
 };
 
 const Chat = ({
   functionCallHandler = () => Promise.resolve(""), // default to return empty string
-  firstPrompt
+  firstPrompt,
+  setEvaluation,
 }: ChatProps) => {
   const [userInput, setUserInput] = useState("");
-  const [messages, setMessages] = useState<MessageProps[]>(firstPrompt ? [{role: "assistant", text: firstPrompt}] : []);
+  const [messages, setMessages] = useState<MessageProps[]>(
+    firstPrompt ? [{ role: "assistant", text: firstPrompt }] : []
+  );
   const [inputDisabled, setInputDisabled] = useState(false);
   const [runCompleted, setRunCompleted] = useState(true);
-  const [threadId, setThreadId] = useState("");
+  const [threadId, setThreadId] = useState<ThreadPull>({
+    threadId: "",
+    threadId2: "",
+    threadId3: "",
+  });
 
   // automatically scroll to bottom of chat
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -100,13 +127,22 @@ const Chat = ({
     const createFeedback = async (body: string) => {
       const res = await fetch(`/api/assistants/feedback`, {
         method: "POST",
-        body
+        body,
       });
     };
-    if(runCompleted && messages[messages.length-1]?.role === "assistant" && messages[messages.length-1]?.text?.includes('FINAL SUBMISSION')){
-      createFeedback(JSON.stringify(extractJsonFromFeedback(messages[messages.length-1].text)))
+    if (runCompleted && threadId.threadId) {
+      const lastMessage = messages[messages.length - 1] ?? ({} as any);
+      if (
+        lastMessage.role === "assistant" &&
+        lastMessage.text?.includes("FINAL SUBMISSION")
+      ) {
+        createFeedback(
+          JSON.stringify(extractJsonFromFeedback(lastMessage.text))
+        );
+      }
+      sendEvaluation();
     }
-  }, [runCompleted]);
+  }, [runCompleted, threadId.threadId]);
 
   // create a new threadID when chat component created
   useEffect(() => {
@@ -115,14 +151,14 @@ const Chat = ({
         method: "POST",
       });
       const data = await res.json();
-      setThreadId(data.threadId);
+      setThreadId(data);
     };
     createThread();
   }, []);
 
   const sendMessage = async (text) => {
     const response = await fetch(
-      `/api/assistants/threads/${threadId}/messages`,
+      `/api/assistants/threads/${threadId.threadId}/messages`,
       {
         method: "POST",
         body: JSON.stringify({
@@ -132,6 +168,22 @@ const Chat = ({
     );
     const stream = AssistantStream.fromReadableStream(response.body);
     handleReadableStream(stream);
+  };
+
+  const sendEvaluation = async () => {
+    if(messages.length < 2) return;
+    setEvaluation((prev) => ({ ...prev, pending: true }));
+    const response = await fetch(
+      `/api/assistants/threads/${threadId.threadId2}/evaluations`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          content: JSON.stringify(messages),
+        }),
+      }
+    );
+    const stream = AssistantStream.fromReadableStream(response.body);
+    handleEvaluationStream(stream);
   };
 
   const submitActionResult = async (runId, toolCallOutputs) => {
@@ -156,10 +208,7 @@ const Chat = ({
     e.preventDefault();
     if (!userInput.trim()) return;
     sendMessage(userInput);
-    setMessages((prevMessages) => [
-      ...prevMessages,
-      { role: "user", text: userInput },
-    ]);
+    appendMessage("user", userInput);
     setUserInput("");
     setInputDisabled(true);
     setRunCompleted(false);
@@ -167,6 +216,21 @@ const Chat = ({
   };
 
   /* Stream Event Handlers */
+
+  // textCreated - create new assistant message
+  const handleEvaluation = (text) => {
+    if (
+      text?.value &&
+      text.value.includes("KeyConcern") &&
+      text.value.includes("RecommendedAction") &&
+      text.value.includes("Priority")
+    ) {
+      setEvaluation({
+        ...extractJsonFromFeedback(text.value),
+        pending: false,
+      } as Evaluation);
+    }
+  };
 
   // textCreated - create new assistant message
   const handleTextCreated = () => {
@@ -177,7 +241,7 @@ const Chat = ({
   const handleTextDelta = (delta) => {
     if (delta.value != null) {
       appendToLastMessage(delta.value);
-    };
+    }
     if (delta.annotations != null) {
       annotateLastMessage(delta.annotations);
     }
@@ -186,7 +250,7 @@ const Chat = ({
   // imageFileDone - show image in chat
   const handleImageFileDone = (image) => {
     appendToLastMessage(`\n![${image.file_id}](/api/files/${image.file_id})\n`);
-  }
+  };
 
   // toolCallCreated - log new tool call
   const toolCallCreated = (toolCall) => {
@@ -243,6 +307,13 @@ const Chat = ({
       if (event.event === "thread.run.completed") handleRunCompleted();
     });
   };
+  const handleEvaluationStream = (stream: AssistantStream) => {
+    // events without helpers yet (e.g. requires_action and run.done)
+    stream.on("event", (event) => {
+      if (event.event === "thread.message.completed")
+        handleEvaluation((event.data.content?.[0] as any)?.text);
+    });
+  };
 
   /*
     =======================
@@ -272,17 +343,16 @@ const Chat = ({
         ...lastMessage,
       };
       annotations.forEach((annotation) => {
-        if (annotation.type === 'file_path') {
+        if (annotation.type === "file_path") {
           updatedLastMessage.text = updatedLastMessage.text.replaceAll(
             annotation.text,
             `/api/files/${annotation.file_path.file_id}`
           );
         }
-      })
+      });
       return [...prevMessages.slice(0, -1), updatedLastMessage];
     });
-    
-  }
+  };
 
   return (
     <div className={styles.chatContainer}>
