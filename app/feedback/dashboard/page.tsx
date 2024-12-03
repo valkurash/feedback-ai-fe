@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import styles from "./page.module.css";
 
 const FunctionCalling = () => {
+  const [feedbackSummary, setFeedbackSummary] = useState('');
   const [feedbackList, setFeedbackList] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   useEffect(() => {
@@ -12,7 +13,8 @@ const FunctionCalling = () => {
         method: "GET",
       });
       const data = await res.json();
-      setFeedbackList(data);
+      setFeedbackList(data.sortedFeedback);
+      setFeedbackSummary(data.summary)
       setIsLoading(false);
     };
     getFeedbacks();
@@ -22,30 +24,16 @@ const FunctionCalling = () => {
     <main className={styles.main}>
       <div className={styles.title}>Feedback Highlights</div>
       <div className={styles.container}>
+        {!!feedbackSummary && <div dangerouslySetInnerHTML={{ __html: feedbackSummary }} />}
         {isLoading ? (
           <div className="loading">Loading feedbacks...</div>
         ) : (
           feedbackList.map((feedback, index) => (
             <div
               key={index}
-              className={`${styles.feedback} ${
-                feedback["Follow-up Required"] === "Yes"
-                  ? `${styles.highPriority}`
-                  : `${styles.normalPriority}`
-              }`}
+              className={`${styles.feedback} ${styles[feedback["Priority"]]}`}
             >
-              <h3>{feedback["Feedback Theme"]}</h3>
-              <p>
-                <strong>Sentiment Summary:</strong>{" "}
-                {feedback["Sentiment Summary"]}
-              </p>
-              <p>
-                <strong>Detailed Feedback:</strong>{" "}
-                {feedback["Detailed Feedback"]}
-              </p>
-              <p>
-                <strong>Submission Date:</strong> {feedback["Submission Date"]}
-              </p>
+              {Object.entries(feedback).map(([k, v]) => <p><strong>{k}:&nbsp;</strong>{v as string}</p>)}
             </div>
           ))
         )}

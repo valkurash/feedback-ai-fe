@@ -34,13 +34,19 @@
 }
 
 /* Background for normal priority (Follow-up Required: No) */
-.normalPriority {
+.Low {
   background-color: #e6f7ff;
   border: 1px solid #91d5ff;
 }
 
+/* Background for normal priority (Follow-up Required: No) */
+.Medium {
+  background-color: #fff9e6;
+  border: 1px solid #ffe591;
+}
+
 /* Background for high priority (Follow-up Required: Yes) */
-.highPriority {
+.High {
   background-color: #fff2e8;
   border: 1px solid #ffa39e;
 }

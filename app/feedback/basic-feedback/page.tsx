@@ -16,11 +16,12 @@ const Home = () => {
     <main className={styles.main}>
       <div className={styles.container}>
         <Chat
+          evaluation={evaluation as any}
           setEvaluation={setEvaluation}
           firstPrompt="Thank you for sharing your thoughts! Could you tell me a bit about your experience? Feel free to share what’s going well, any challenges you’re facing, or areas where we could improve."
         />
       </div>
-      <EvaluationWidget evaluation={evaluation}/>
+      <EvaluationWidget evaluation={evaluation} />
     </main>
   );
 };

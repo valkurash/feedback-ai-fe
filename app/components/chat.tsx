@@ -81,13 +81,13 @@ type ChatProps = {
     toolCall: RequiredActionFunctionToolCall
   ) => Promise<string>;
   firstPrompt?: string;
+  evaluation: Evaluation;
   setEvaluation: Dispatch<SetStateAction<Evaluation>>;
 };
 
 type ThreadPull = {
   threadId: string;
   threadId2: string;
-  threadId3: string;
 };
 
 type Evaluation = {
@@ -100,6 +100,7 @@ type Evaluation = {
 const Chat = ({
   functionCallHandler = () => Promise.resolve(""), // default to return empty string
   firstPrompt,
+  evaluation,
   setEvaluation,
 }: ChatProps) => {
   const [userInput, setUserInput] = useState("");
@@ -111,7 +112,6 @@ const Chat = ({
   const [threadId, setThreadId] = useState<ThreadPull>({
     threadId: "",
     threadId2: "",
-    threadId3: "",
   });
 
   // automatically scroll to bottom of chat
@@ -137,7 +137,7 @@ const Chat = ({
         lastMessage.text?.includes("FINAL SUBMISSION")
       ) {
         createFeedback(
-          JSON.stringify(extractJsonFromFeedback(lastMessage.text))
+          JSON.stringify({...extractJsonFromFeedback(lastMessage.text), Priority: evaluation.Priority, "Key Concern": evaluation.KeyConcern, "Recommended Actions": evaluation.RecommendedAction})
         );
       }
       sendEvaluation();
