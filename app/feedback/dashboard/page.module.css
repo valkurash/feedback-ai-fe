@@ -50,3 +50,43 @@
   background-color: #fff2e8;
   border: 1px solid #ffa39e;
 }
+
+.summary {
+display: flex;
+gap: 1rem;
+  width: 100%;
+}
+
+.summaryPanel {
+  min-width: 20%;
+  background-color: #fff;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  padding: 16px;
+  transition: transform 0.2s ease;
+}
+
+.card {
+  margin-bottom: 1rem;
+}
+.cardTitle {
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.cardItem {
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.low {
+  color: #2ecc71;
+}
+
+.medium {
+  color: #f1c40f;
+}
+
+.high {
+  color: #e74c3c;
+}
